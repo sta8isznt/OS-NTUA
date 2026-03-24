@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
     /* count the occurrences of the given character */
     while ((n = read(fdr, buff, BUFF_SIZE)) != 0){
         if (n == -1){
-            char *error[] = "Problem reading from file";
+            char error[] = "Problem reading from file";
             write_message(2, error);
             close(fdr);
             close(fdw);
