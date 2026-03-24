@@ -15,9 +15,6 @@ int main(int argc, char *argv[]){
     }
 
     int fdr, fdw;
-    char errmessr[] = "Problem opening file to read\n";
-    char errmessw[] = "Problem opening file to write\n";
-    char errmessrw[] = "Problem reading from file\n";
     char c2c = 'a';
     int cnt = 0;
     char buff[BUFF_SIZE];
@@ -26,14 +23,16 @@ int main(int argc, char *argv[]){
     /* open file for reading */
     fdr = open(argv[1], O_RDONLY);
     if (fdr == -1){
-        write_message(2, errmessr);
+        char error[] = "Error opening file for reading";
+        write_message(2, error);
         exit(1);
     }
 
     /* open file for writeing the result */
     fdw = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fdw == -1){
-        write_message(2, errmessw);
+        char error[] = "Error opening file for writing";
+        write_message(2, error);
         close(fdr);
         exit(1);
     }
@@ -44,7 +43,8 @@ int main(int argc, char *argv[]){
     /* count the occurrences of the given character */
     while ((n = read(fdr, buff, BUFF_SIZE)) != 0){
         if (n == -1){
-            write_message(2, errmessrw);
+            char *error[] = "Problem reading from file";
+            write_message(2, error);
             close(fdr);
             close(fdw);
             exit(1);
