@@ -63,14 +63,14 @@ int main(int argc, char *argv[])
     if (argc != 4)
     {
         char error[] = "Please pass the correct number of arguments!\n";
-        write(2, error, sizeof(error) - 1);
+       write_message(2, error);
         _exit(1);
     }
 
     if (strlen(argv[3]) != 1)
     {
         char *error = "The third argument must be a single character\n";
-        write(2, error, strlen(error));
+        write_message(2, error);
         return 1;
     }
 
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     sigemptyset(&sa.sa_mask);
     if (sigaction(SIGINT, &sa, NULL) < 0){
         char *error = "handler";
-        write(2, error, strlen(error));
+        write_message(2, error);
         return 1;
     }
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     sigemptyset(&sa_ch.sa_mask);
     if (sigaction(SIGCHLD, &sa_ch, NULL) < 0){
         char *error = "handler";
-        write(2, error, strlen(error));
+        write_message(2, error);
         return 1;
     }
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     if (stat(argv[1], &reading_file_stats) < 0)
     {
         char *error = "Error getting stats for the file\n";
-        write(2, error, strlen(error));
+        write_message(2, error);
         return 1;
     }
     off_t size = reading_file_stats.st_size;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
         if (pipe(pipes[i]) < 0)
         {
             char *error = "Error creating a pipe\n";
-            write(2, error, strlen(error));
+            write_message(2, error);
             return 1;
         }
     }
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         if (p < 0)
         {
             char *error = "Error in fork\n";
-            write(2, error, strlen(error));
+            write_message(2, error);
             return 1;
         }
         if (p == 0)
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
             if (fd < 0)
             {
                 char *error = "Error opening the file\n";
-                write(2, error, strlen(error));
+                write_message(2, error);
                 _exit(1);
             }
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
             if (lseek(fd, start, SEEK_SET) < 0)
             {
                 char *error = "Error moving the file offset\n";
-                write(2, error, strlen(error));
+                write_message(2, error);
                 _exit(1);
             }
 
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
                 if (n < 0)
                 {
                     char *error = "Error reading from file";
-                    write(2, error, strlen(error));
+                    write_message(2, error);
                     _exit(1);
                 }
                 else if (n == 0)
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
             if (write(pipes[i][1], &count, sizeof(count)) != sizeof(count))
             {
                 char *error = "Error writing to pipe\n";
-                write(2, error, strlen(error));
+                write_message(2, error);
                 _exit(1);
             }
 
@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
         if (read(pipes[i][0], &x, sizeof(x)) != sizeof(x))
         {
             char *error = "Error reading from pipe\n";
-            write(2, error, strlen(error));
+            write_message(2, error);
             return 1;
         }
         total += x;
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     if (fdw < 0)
     {
         char *error = "Error opening the file\n";
-        write(2, error, strlen(error));
+        write_message(2, error);
         _exit(1);
     }
 
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
         if (wcnt == -1)
         {
             char * error = "Error writing to the output file\n";
-            write(2, error, strlen(error));
+            write_message(2, error);
             close(fdw);
             return 1;
         }

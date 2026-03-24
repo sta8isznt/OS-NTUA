@@ -33,4 +33,18 @@ ssize_t read_all(int fd, void *buf, size_t count){
 
     return total;
 }
+ssize_t write_all(int fd, const void *buf, size_t count){
+    size_t total = 0;
+    ssize_t n;
+
+    while (total < count) {
+        n = write(fd, (char *)buf + total, count - total);
+        if (n == -1) {
+            return -1;
+        }
+        total += n;
+    }
+
+    return total;
+}
 
