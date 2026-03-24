@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <errno.h>
+#include "utils.h"
 
 #define BUFF_SIZE 1024
 #define P 4
@@ -193,19 +194,16 @@ int main(int argc, char *argv[])
             sleep((i + 1) * 2);
 
             /* Write the count in the pipe */
-            if (write(pipes[i][1], &count, sizeof(count)) != sizeof(count))
-            {
-                char *error = "Error writing to pipe\n";
-                write_message(2, error);
-                _exit(1);
-            }
-
-            close(fd);
-            close(pipes[i][1]);
-
-
-            _exit(0);
-        }
+          if (write_all(pipes[i][1], &count, sizeof(count)) == -1) {
+    
+    char *error = "Error writing to pipe\n";
+    write_message(2, error);
+    
+    
+    close(fd);
+    close(pipes[i][1]);
+    _exit(1);
+}
         // Parent increases the current number of children after successful fork
         current_children++;
     }
@@ -249,19 +247,13 @@ int main(int argc, char *argv[])
 
     sprintf(output, "The character '%c' appears %d times in file %s.\n", argv[3][0], total, argv[1]);
     len = strlen(output);
-    do
-    {
-        wcnt = write(fdw, output + idx, len - idx);
-        if (wcnt == -1)
-        {
-            char * error = "Error writing to the output file\n";
-            write_message(2, error);
-            close(fdw);
-            return 1;
-        }
-        idx += wcnt;
-    } while (idx < len);
-
+   
+   if (write_all(fdw, output, strlen(output)) == -1) {
+    char *error = "Error writing to the output file\n";
+    write_message(2, error);
+    close(fdw);
+    return 1;
+}
     /* Close the writing file */
     close(fdw);
     return 0;
