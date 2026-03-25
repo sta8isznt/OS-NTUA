@@ -9,4 +9,6 @@ ssize_t read_all(int fd, void *buf, size_t count);
 
 ssize_t write_all(int fd, const void *buf, size_t count);
 
+void show_pstree(pid_t t);
+
 #endif
