@@ -63,3 +63,34 @@ void show_pstree(pid_t p){
         exit(104);
     }
 }
+
+ssize_t read_until(int fd, char *buf, size_t max_count, char delim) {
+    size_t total = 0;
+    ssize_t n;
+    char c;
+
+    if (max_count == 0) {
+        return 0;
+    }
+
+    while (total < max_count - 1) {
+        n = read(fd, &c, 1);
+
+        if (n == -1) {
+            return -1;
+        }
+
+        if (n == 0) {
+            break;   // EOF
+        }
+
+        buf[total++] = c;
+
+        if (c == delim) {
+            break;
+        }
+    }
+
+    buf[total] = '\0';
+    return total;
+}

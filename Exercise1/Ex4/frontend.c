@@ -72,7 +72,7 @@ int main(int argc, char * argv[]){
     close(pipe_fd_dis[0]);
     close(pipe_dis_fd[1]);
 
-    char *welcome_message = "Welcome to the app!\nTo see the progress type <prg>\nTo add x workers type <a x>\nTo remove y workers type <r y>\nTo see process info type <inf>\nTo exit the app type <ext>";
+    char *welcome_message = "Welcome to the app!\nTo see the progress type <p>\nTo add x workers type <a x>\nTo remove y workers type <r y>\nTo see process info type <i>\nTo exit the app type <e>\n";
     write_message(1,welcome_message);
 
     // Create a buffer for reading
