@@ -18,8 +18,7 @@ pid_t child_pids[P];
 volatile sig_atomic_t child_finished[P];
 volatile sig_atomic_t child_exit_status[P];
 
-void sighandler(int signum)
-{
+void sighandler(int signum){
     char buf[16];
     char tmp[16];
     int n;
@@ -49,8 +48,7 @@ void sighandler(int signum)
     write(2, buf, i);
 }
 
-void sigchld_handler(int signum)
-{
+void sigchld_handler(int signum){
     pid_t pid;
     int status;
 
@@ -72,8 +70,7 @@ void sigchld_handler(int signum)
     }
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     /* check for arguments faults */
     if (argc != 4)
     {
