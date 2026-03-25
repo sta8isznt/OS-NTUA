@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <signal.h>
-#include <errno.h>
 #include "utils.h"
 
 #define BUFF_SIZE 1024
@@ -18,14 +17,15 @@ pid_t child_pids[P];
 volatile sig_atomic_t child_finished[P];
 volatile sig_atomic_t child_exit_status[P];
 
+/* Converts the integer current_children into string and prints it to the stdout */
 void sighandler(int signum){
     char buf[16];
     char tmp[16];
     int n;
-    int i = 0;
-    int j = 0;
+    size_t i = 0;
+    size_t j = 0;
 
-    // read the parameter signum and do nothing (for the compiler)
+    /* read the parameter signum and do nothing (for the compiler) */
     (void)signum;
 
     n = current_children;
@@ -33,14 +33,14 @@ void sighandler(int signum){
     if (n == 0) {
         tmp[j++] = '0';
     } else {
-        while (n > 0 && j < (int)sizeof(tmp)) {
+        while (n > 0 && j < sizeof(tmp)) {
             tmp[j++] = '0' + (n % 10);
             n /= 10;
         }
     }
 
     buf[i++] = '\n';
-    while (j > 0 && i < (int)sizeof(buf) - 1) {
+    while (j > 0 && i < sizeof(buf) - 1) {
         buf[i++] = tmp[--j];
     }
     buf[i++] = '\n';
@@ -48,6 +48,7 @@ void sighandler(int signum){
     write(2, buf, i);
 }
 
+/* handler for collecting terminated children and updating current_children */
 void sigchld_handler(int signum){
     pid_t pid;
     int status;
@@ -55,6 +56,7 @@ void sigchld_handler(int signum){
     (void)signum;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        /* Keep track of the children finished an their exit status */
         for (int i = 0; i < P; i++) {
             if (child_pids[i] == pid) {
                 child_finished[i] = 1;
@@ -111,6 +113,7 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
+    /* Prepare a sigset containing only SIGCHLD */
     sigemptyset(&block_chld);
     sigaddset(&block_chld, SIGCHLD);
 
@@ -140,6 +143,7 @@ int main(int argc, char *argv[]){
     /* Create P children with fork */
     for (int i = 0; i < P; i++)
     {
+        /* Block SIGCHLD signals until updating the children arrays */
         if (sigprocmask(SIG_BLOCK, &block_chld, &oldmask) < 0)
         {
             char error[] = "Error blocking SIGCHLD\n";
@@ -157,7 +161,9 @@ int main(int argc, char *argv[]){
         }
         if (p == 0)
         {
+            /* Unblock the SIGCHLD mask in the child */
             sigprocmask(SIG_SETMASK, &oldmask, NULL);
+
             /* Set a handler in order to ignore the SIGINT signal */
             signal(SIGINT, SIG_IGN);
 
@@ -236,12 +242,16 @@ int main(int argc, char *argv[]){
 
             exit(0);
         }
+
+        /* Parent updates the child array stats */
         child_pids[i] = p;
         child_finished[i] = 0;
         child_exit_status[i] = -1;
-        // Parent increases the current number of children after successful fork
+
+        /* Parent increases the current number of children after successful fork */
         current_children++;
 
+        /* After safe updating unblock the SIGCHLD signal */
         if (sigprocmask(SIG_SETMASK, &oldmask, NULL) < 0)
         {
             char error[] = "Error unblocking SIGCHLD\n";
@@ -256,7 +266,7 @@ int main(int argc, char *argv[]){
         close(pipes[i][1]);
     }
 
-    /* Wait for all childs to write their result and then sum them up */
+    /* Wait for all children to write their result and then sum them up */
     int total = 0;
     int x;
 
@@ -272,10 +282,12 @@ int main(int argc, char *argv[]){
         close(pipes[i][0]);
     }
 
+    /* Wait till all children terminate */
     while (current_children > 0) {
         pause();
     }
 
+    /* Check if all children exited successfully */
     for (int i = 0; i < P; i++)
     {
         if (!child_finished[i] || child_exit_status[i] != 0)
