@@ -23,7 +23,7 @@ int main(int argx, char *argv[]){
         x = 10;
         sprintf(message, "The child's variable is %d\n", x);
         write_message(1, message);
-        exit(1);
+        exit(0);
     }
     else{
         sprintf(message, "My child's PID is %ld\n", (long)p);
