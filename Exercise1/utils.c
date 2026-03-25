@@ -33,6 +33,7 @@ ssize_t read_all(int fd, void *buf, size_t count){
 
     return total;
 }
+
 ssize_t write_all(int fd, const void *buf, size_t count){
     size_t total = 0;
     ssize_t n;
@@ -47,4 +48,3 @@ ssize_t write_all(int fd, const void *buf, size_t count){
 
     return total;
 }
-
