@@ -1,4 +1,4 @@
-all: fork_example count_chars_with_child execve_example
+all: fork_example count_chars_with_child execv_example
 
 CC = gcc
 CFLAGS = -Wall -I../ -O2
@@ -10,7 +10,7 @@ fork_example: fork_example.o utils.o
 count_chars_with_child: count_chars_with_child.o utils.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-execve_example: execve_example.o
+execv_example: execv_example.o utils.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 fork_example.o: fork_example.c ../utils.h
@@ -19,11 +19,11 @@ fork_example.o: fork_example.c ../utils.h
 count_chars_with_child.o: count_chars_with_child.c ../utils.h
 	$(CC) $(CFLAGS) -c $<
 
-execve_example.o: execve_example.c
+execv_example.o: execv_example.c ../utils.h
 	$(CC) $(CFLAGS) -c $<
 
 utils.o: ../utils.c ../utils.h
 	$(CC) $(CFLAGS) -c ../utils.c -o $@
 
 clean:
-	rm -f *.o fork_example count_chars_with_child execve_example
+	rm -f *.o fork_example count_chars_with_child execv_example

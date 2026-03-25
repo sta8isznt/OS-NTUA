@@ -1,14 +1,13 @@
 #include <unistd.h>
 #include <sys/types.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
-
-extern char ** environ;
+#include "utils.h"
 
 int main(int argc, char * argv[]){
     if (argc != 5){
-        perror("Invalid number of arguments!");
+        char error[] = "Invalid number of arguments!\n";
+        write_message(2, error);
         exit(1);
     }
 
@@ -17,13 +16,15 @@ int main(int argc, char * argv[]){
     
     p = fork();
     if (p < 0){
-        perror("fork");
+        char error[] = "Problem during fork\n";
+        write_message(2, error);
         exit(1);
     }
     if (p == 0){
-        execve(argv[1], newargv, environ);
-        /* execve returns only on error */
-        perror("execve");
+        execv(argv[1], newargv);
+        /* execv returns only on error */
+        char error[] = "Problem during execv\n";
+        write_message(2, error);
         exit(1);
     }
     else{
