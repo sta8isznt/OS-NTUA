@@ -99,7 +99,7 @@ int main(int argc, char *argv[]){
     else {
         close(pipefd[1]);
         wait(&status);
-        if (!WIFEXITED(status) || WIFEXITED(status) != 0){
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0){
            char error[] = "Child failed\n";
            write_message(2, error);
            close(fdr);
@@ -127,6 +127,13 @@ int main(int argc, char *argv[]){
 
         if (written < 0 || written >= sizeof(output)) {
             char error[] = "Output message too long\n";
+            write_message(2, error);
+            close(fdw);
+            exit(1);
+        }
+        
+        if (write_all(fdw, output, written) == -1){
+            char error[] = "Problem writing to output file\n";
             write_message(2, error);
             close(fdw);
             exit(1);
