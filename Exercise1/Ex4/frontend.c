@@ -1,6 +1,7 @@
 #include "protocol.h"
 #include "utils.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
@@ -50,13 +51,28 @@ int main(int argc, char * argv[]){
         /* Dispatcher reads commands from frontend and writes replies back. */
         close(pipe_fd_dis[1]);
         close(pipe_dis_fd[0]);
+
+        /* Create the new argv and pass the pipes fds */
+        char fd_dis[16];
+        char dis_fd[16];
+
+        snprintf(fd_dis, sizeof(fd_dis), "%d", pipe_fd_dis[0]);
+        snprintf(dis_fd, sizeof(dis_fd), "%d", pipe_dis_fd[1]);
+
+        char* newargv[] = {"./dispatcher",fd_dis, dis_fd, NULL};
+        execv("./dispatcher", newargv);
+
+        /* If this code executes an error at execv has occured */
+        char error[] = "execv\n";
+        write_message(2, error);
+        exit(1);
     }
 
     /* Frontend writes commands to dispatcher and reads replies back. */
     close(pipe_fd_dis[0]);
     close(pipe_dis_fd[1]);
 
-    char *welcome_message = "Welcome to the app!\nTo see the progress type <p>\nTo add x workers type <a x>\nTo remove y workers type <r y>\nTo see process info type <i>\nTo exit the app type <e>";
+    char *welcome_message = "Welcome to the app!\nTo see the progress type <prg>\nTo add x workers type <a x>\nTo remove y workers type <r y>\nTo see process info type <inf>\nTo exit the app type <ext>";
     write_message(1,welcome_message);
 
     // Create a buffer for reading
