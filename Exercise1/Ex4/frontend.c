@@ -1,0 +1,106 @@
+#include "protocol.h"
+#include "utils.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/select.h>
+
+#define BUF 256
+
+int main(int argc, char * argv[]){
+    /*
+    Check for arguments faults 
+    The correct format should be ./frontend input_file target
+    */
+    if (argc != 3){
+        char error[] = "Arguments fromat: ./frontend input_file target\n";
+        write_message(2, error);
+        exit(1);
+    }
+
+    if (strlen(argv[2]) != 1){
+        char error[] = "The second argument must be a single character\n";
+        write_message(2, error);
+        exit(1);
+    }
+
+    /* Create a pipe to communicate with dispatcher*/
+    int pipe_fd_dis[2];
+    int pipe_dis_fd[2];
+    if (pipe(pipe_fd_dis) < 0){
+            char error[] = "Error creating pipe_fd_dis\n";
+            write_message(2, error);
+            exit(1);
+    }
+    if (pipe(pipe_dis_fd) < 0){
+        char error[] = "Error creating pipe_dis_fd\n";
+        write_message(2, error);
+        exit(1);
+    }
+
+    /* Fork to create dispatcher */
+    pid_t p;
+    p = fork();
+    if (p < 0){
+        char error[] = "Error in fork\n";
+        write_message(2, error);
+        exit(1);
+    }
+    if (p == 0){
+        /* Dispatcher reads commands from frontend and writes replies back. */
+        close(pipe_fd_dis[1]);
+        close(pipe_dis_fd[0]);
+    }
+
+    /* Frontend writes commands to dispatcher and reads replies back. */
+    close(pipe_fd_dis[0]);
+    close(pipe_dis_fd[1]);
+
+    char *welcome_message = "Welcome to the app!\nTo see the progress type <p>\nTo add x workers type <a x>\nTo remove y workers type <r y>\nTo see process info type <i>\nTo exit the app type <e>";
+    write_message(1,welcome_message);
+
+    // Create a buffer for reading
+    char buf[BUF];
+
+    /* Event Loop */
+    while (1) {
+        /* Define a file descriptor set to monitor */
+        fd_set fds;
+        FD_ZERO(&fds);
+
+        /* Add stdin and dispatcher to the monitor list */
+        FD_SET(0, &fds);
+        FD_SET(pipe_dis_fd[0], &fds);
+
+        /* Set the max fd for select */
+        int nfds = (pipe_dis_fd[0] > 0 ? pipe_dis_fd[0] : 0) + 1;
+
+        /* Wait until stdin or dispatcher write something */
+        if (select(nfds, &fds, NULL, NULL, NULL) < 0){
+            char error[] = "Error with select\n";
+            write_message(2, error);
+            exit(1);
+        };
+
+        // User input (stdin)
+        if (FD_ISSET(0, &fds)){
+            int n = read_all(0, buf, BUF);
+            if (n <= 0){
+                char error[] = "Error reading from stdin\n";
+                write_message(2, error);
+                break;
+            }
+        }
+
+        // Dispatcher response
+        if (FD_ISSET(pipe_dis_fd[0], &fds)){
+            int n = read_all(pipe_dis_fd[0], buf, BUF);
+
+            if (n <= 0){
+                char error[] = "Error reading from pipe_dis_fd\n";
+                write_message(2, error);
+                break;
+            }
+        }
+    }
+}
