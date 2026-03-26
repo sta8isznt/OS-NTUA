@@ -1,7 +1,9 @@
+#include "Ex4/protocol.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 void write_message(int fd, const char *message){
     size_t len = strlen(message);
@@ -93,4 +95,61 @@ ssize_t read_until(int fd, char *buf, size_t max_count, char delim) {
 
     buf[total] = '\0';
     return total;
+}
+
+int parse_user_command(const char *buf, message_t *msg){
+    // Strip the newline
+    char *tmp;
+    strcpy(tmp, buf);
+    tmp[strcspn(tmp, "\n")] = '\0';
+
+    if (tmp[0] == '\0') return -1;
+
+    switch (tmp[0]) {
+        case 'p':
+            // Must be exactly p
+            if (buf[1] == '\0'){
+                msg->type = CMD_PROGRESS;
+                return 0;
+            }
+            break;
+        case 'i':
+            // Must be exactly i
+            if (buf[1] == '\0'){
+                msg->type = CMD_INFO;
+                return 0;
+            }
+            break;
+        case 'e':
+            // Must be exactly e
+            if (buf[1] == '\0'){
+                msg->type = CMD_SHUTDOWN;
+                return 0;
+            }
+            break;
+        case 'a':{
+            int value;
+            if (sscanf(tmp, "a %d", &value) != 0 && value > 0 ){
+                msg->type = CMD_ADD_WORKER;
+                msg->value = value;
+                return 0;
+            }
+            break;
+        }
+
+        case 'r': {
+            int value;
+            if (sscanf(buf + 1, "%d", &value) == 1 && value > 0) {
+                msg->type = CMD_REMOVE_WORKER;
+                msg->value = value;
+                return 1;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return -1; //invalid command
 }

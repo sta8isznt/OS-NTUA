@@ -100,23 +100,26 @@ int main(int argc, char * argv[]){
 
         // User input (stdin)
         if (FD_ISSET(0, &fds)){
-            int n = read_all(0, buf, BUF);
-            if (n <= 0){
+            // Read until you see a new line
+            int n = read_until(0, buf, BUF, '\n');
+            if (n < 0){
                 char error[] = "Error reading from stdin\n";
                 write_message(2, error);
-                break;
+                exit(1);
             }
+            else if (n == 0) break;
         }
 
         // Dispatcher response
         if (FD_ISSET(pipe_dis_fd[0], &fds)){
-            int n = read_all(pipe_dis_fd[0], buf, BUF);
+            int n = read_until(pipe_dis_fd[0], buf, BUF, '\n');
 
-            if (n <= 0){
+            if (n < 0){
                 char error[] = "Error reading from pipe_dis_fd\n";
                 write_message(2, error);
-                break;
+                exit(1);
             }
+            else if (n == 0) break;
         }
     }
 }

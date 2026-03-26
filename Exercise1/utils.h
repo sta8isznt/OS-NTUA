@@ -11,4 +11,6 @@ ssize_t write_all(int fd, const void *buf, size_t count);
 
 void show_pstree(pid_t t);
 
+ssize_t read_until(int fd, char *buf, size_t max_count, char delim);
+
 #endif
