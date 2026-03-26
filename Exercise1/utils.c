@@ -99,7 +99,7 @@ ssize_t read_until(int fd, char *buf, size_t max_count, char delim) {
 
 int parse_user_command(const char *buf, message_t *msg){
     // Strip the newline
-    char *tmp;
+    char tmp[256];
     strcpy(tmp, buf);
     tmp[strcspn(tmp, "\n")] = '\0';
 
@@ -108,28 +108,28 @@ int parse_user_command(const char *buf, message_t *msg){
     switch (tmp[0]) {
         case 'p':
             // Must be exactly p
-            if (buf[1] == '\0'){
+            if (tmp[1] == '\0'){
                 msg->type = CMD_PROGRESS;
                 return 0;
             }
             break;
         case 'i':
             // Must be exactly i
-            if (buf[1] == '\0'){
+            if (tmp[1] == '\0'){
                 msg->type = CMD_INFO;
                 return 0;
             }
             break;
         case 'e':
             // Must be exactly e
-            if (buf[1] == '\0'){
+            if (tmp[1] == '\0'){
                 msg->type = CMD_SHUTDOWN;
                 return 0;
             }
             break;
         case 'a':{
             int value;
-            if (sscanf(tmp, "a %d", &value) != 0 && value > 0 ){
+            if (sscanf(tmp, "a %d", &value) == 1 && value > 0 ){
                 msg->type = CMD_ADD_WORKER;
                 msg->value = value;
                 return 0;
@@ -139,10 +139,10 @@ int parse_user_command(const char *buf, message_t *msg){
 
         case 'r': {
             int value;
-            if (sscanf(buf + 1, "%d", &value) == 1 && value > 0) {
+            if (sscanf(tmp + 1, "%d", &value) == 1 && value > 0) {
                 msg->type = CMD_REMOVE_WORKER;
                 msg->value = value;
-                return 1;
+                return 0;
             }
             break;
         }

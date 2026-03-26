@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <signal.h>
 
 #define BUF 256
 
@@ -59,7 +60,7 @@ int main(int argc, char * argv[]){
         snprintf(fd_dis, sizeof(fd_dis), "%d", pipe_fd_dis[0]);
         snprintf(dis_fd, sizeof(dis_fd), "%d", pipe_dis_fd[1]);
 
-        char* newargv[] = {"./dispatcher",fd_dis, dis_fd, NULL};
+        char* newargv[] = {"./dispatcher",fd_dis, dis_fd, argv[1], argv[2], NULL};
         execv("./dispatcher", newargv);
 
         /* If this code executes an error at execv has occured */
@@ -108,6 +109,37 @@ int main(int argc, char * argv[]){
                 exit(1);
             }
             else if (n == 0) break;
+
+            // Parse the command from the user
+            message_t msg;
+            if (parse_user_command(buf, &msg) < 0){
+                char error[] = "Please pass a correct command!\n";
+                write_message(1, error);
+                continue;
+            }
+
+            if (msg.type == CMD_PROGRESS){
+                // If the command is progress send a signal
+                if (kill(p, SIGUSR1) < 0) {
+                    char error[] = "Error sending SIGUSR1 to dispatcher\n";
+                    write_message(2, error);
+                }
+            }
+            else if (msg.type == CMD_INFO){
+                // If the command is info send a signal
+                if (kill(p, SIGUSR2) < 0) {
+                    char error[] = "Error sending SIGUSR2 to dispatcher\n";
+                    write_message(2, error);
+                }
+            }
+            else {
+                // Send the command to dispatcher
+                if (write_all(pipe_fd_dis[1], &msg, sizeof(msg)) < 0){
+                    char error[] = "Error writing to dispatcher\n";
+                    write_message(2, error);
+                    exit(1);
+                }
+            }
         }
 
         // Dispatcher response
@@ -120,6 +152,12 @@ int main(int argc, char * argv[]){
                 exit(1);
             }
             else if (n == 0) break;
+
+            if (write_all(1, buf, n) != n){
+                char error[] = "Error writing response from dispatcher to stdout\n";
+                write_message(2, error);
+                exit(1);
+            }
         }
     }
 }
