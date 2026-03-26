@@ -134,7 +134,7 @@ int main(int argc, char * argv[]){
             }
             else {
                 // Send the command to dispatcher
-                if (write_all(pipe_fd_dis[1], &msg, sizeof(msg)) < 0){
+                if (write_all(pipe_fd_dis[1], &msg, sizeof(msg)) != sizeof(msg)){
                     char error[] = "Error writing to dispatcher\n";
                     write_message(2, error);
                     exit(1);
