@@ -26,7 +26,7 @@ typedef struct {
     size_t length;      /* count of bytes */
     char target;        /* searching character */
     int count;          /* worker result */
-    int job_id;
+    int job_id;         // chunk number
 } message_t;
 
 #endif
