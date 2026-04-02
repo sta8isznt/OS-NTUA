@@ -1,0 +1,5 @@
+*.o
+dispatcher
+worker
+frontend
+input.txt
