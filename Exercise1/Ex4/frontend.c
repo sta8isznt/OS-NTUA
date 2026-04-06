@@ -13,6 +13,8 @@
 
 #define BUF 256
 
+int shutting_down = 0;
+
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
@@ -53,6 +55,7 @@ int main(int argc, char *argv[])
         close(pipe_fd_dis[1]);
         close(pipe_dis_fd[0]);
 
+        // Store in buffers the fds of pipes in order to pass them in dispatcher
         char fd_dis[16];
         char dis_fd[16];
 
@@ -70,6 +73,7 @@ int main(int argc, char *argv[])
 
         execv("./dispatcher", newargv);
 
+        // If successful this code will never execute
         {
             char error[] = "execv dispatcher failed\n";
             write_message(2, error);
@@ -92,28 +96,26 @@ int main(int argc, char *argv[])
     }
 
     while (1) {
+        // Setup a file descriptor set to monitor -> Stdin + Dispatcher Response pipe
         fd_set fds;
         char buf[BUF];
         int nfds;
         int rc;
 
         FD_ZERO(&fds);
-        FD_SET(STDIN_FILENO, &fds);
+        if (!shutting_down) FD_SET(0, &fds);
         FD_SET(pipe_dis_fd[0], &fds);
 
-        nfds = (pipe_dis_fd[0] > STDIN_FILENO ? pipe_dis_fd[0] : STDIN_FILENO) + 1;
+        nfds = pipe_dis_fd[0] + 1;
 
         rc = select(nfds, &fds, NULL, NULL, NULL);
         if (rc < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
             write_message(2, "Error with select\n");
             break;
         }
 
-        if (FD_ISSET(STDIN_FILENO, &fds)) {
-            int n = read_until(STDIN_FILENO, buf, BUF, '\n');
+        if (FD_ISSET(0, &fds)) {
+            int n = read_until(0, buf, BUF, '\n');
             if (n < 0) {
                 write_message(2, "Error reading from stdin\n");
                 break;
@@ -122,6 +124,7 @@ int main(int argc, char *argv[])
             }
 
             message_t msg;
+            // Initialize the message struct with zeros
             memset(&msg, 0, sizeof(msg));
 
             if (parse_user_command(buf, &msg) < 0) {
@@ -129,6 +132,7 @@ int main(int argc, char *argv[])
                 continue;
             }
 
+            // For p ir i instruction send dignal to dispatcher
             if (msg.type == CMD_PROGRESS) {
                 if (kill(p, SIGUSR1) < 0) {
                     write_message(2, "Error sending SIGUSR1 to dispatcher\n");
@@ -144,9 +148,11 @@ int main(int argc, char *argv[])
                     write_message(2, "Error writing command to dispatcher\n");
                     break;
                 }
-
+                // IF SHUTDOWN occurs, set the corresponding flag, close the pipe to dispatcher and stop monitoring stdin
+                // When the dispatcher closes his side of pipe EOF will occur and the loop will break
                 if (msg.type == CMD_SHUTDOWN) {
-                    break;
+                    shutting_down = 1;
+                    close(pipe_fd_dis[1]);
                 }
             }
         }
@@ -169,9 +175,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    close(pipe_fd_dis[1]);
+    if(!shutting_down) close(pipe_fd_dis[1]);
     close(pipe_dis_fd[0]);
 
+    // We dont care here about status termination info
     waitpid(p, NULL, 0);
     return 0;
 }

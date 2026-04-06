@@ -1,6 +1,3 @@
-#define _XOPEN_SOURCE 700
-#define _FILE_OFFSET_BITS 64
-
 #include "protocol.h"
 #include "utils.h"
 
@@ -8,7 +5,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <signal.h>
 
 #define BUF_SIZE 4096
 
@@ -21,8 +17,7 @@
  exit on CMD_TERMINATE_WORKER
  */
 
-static int count_in_chunk(int fd, off_t offset, size_t length, char target)
-{
+static int count_in_chunk(int fd, off_t offset, size_t length, char target){
     char buf[BUF_SIZE];
     off_t pos = offset;
     off_t end = offset + (off_t)length;
@@ -65,8 +60,7 @@ static int count_in_chunk(int fd, off_t offset, size_t length, char target)
     return total;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     const char *filename;
     int read_fd;
     int write_fd;
@@ -93,11 +87,11 @@ int main(int argc, char *argv[])
 
         r = read_all(read_fd, &msg, sizeof(msg));
         if (r == 0) {
+            // Dspatcher closed the pipe so exit
             break;
         }
 
-        if (r < 0 || (size_t)r != sizeof(msg)) {
-            write_message(2, "worker read_all failed\n");
+        if (r != (ssize_t)sizeof(msg)) {
             break;
         }
 
@@ -127,7 +121,6 @@ int main(int argc, char *argv[])
             }
 
             if (write_all(write_fd, &reply, sizeof(reply)) != (ssize_t)sizeof(reply)) {
-                write_message(2, "worker write_all failed\n");
                 break;
             }
         }

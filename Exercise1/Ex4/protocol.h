@@ -21,13 +21,13 @@ typedef enum {
 
 typedef struct {
     msg_type_t type;
-    int value;
+    int value;      // For add, remove commands
     pid_t pid;
-    off_t offset;
+    off_t offset;   // For dispatcher -> worker commands
     size_t length;
     char target;
-    int count;
-    int job_id;
+    int count;      // For results from workers
+    int job_id;     // Identity of assigned chunk
 } message_t;
 
 #endif
