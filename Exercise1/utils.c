@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 
+// Helper for writing C strings to a file descriptor
 void write_message(int fd, const char *message){
     size_t len = strlen(message);
     ssize_t wcnt;
@@ -26,6 +28,9 @@ ssize_t read_all(int fd, void *buf, size_t count){
     while (total < count) {
         n = read(fd, (char *)buf + total, count - total);
         if (n == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
             return -1;
         }
         if (n == 0) {
@@ -37,6 +42,7 @@ ssize_t read_all(int fd, void *buf, size_t count){
     return total;
 }
 
+// Helper for writing buffers(e.g. structs, formated strings) to a file descriptor
 ssize_t write_all(int fd, const void *buf, size_t count){
     size_t total = 0;
     ssize_t n;
@@ -44,6 +50,9 @@ ssize_t write_all(int fd, const void *buf, size_t count){
     while (total < count) {
         n = write(fd, (char *)buf + total, count - total);
         if (n == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
             return -1;
         }
         total += n;
@@ -79,6 +88,9 @@ ssize_t read_until(int fd, char *buf, size_t max_count, char delim) {
         n = read(fd, &c, 1);
 
         if (n == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
             return -1;
         }
 
@@ -139,7 +151,7 @@ int parse_user_command(const char *buf, message_t *msg){
 
         case 'r': {
             int value;
-            if (sscanf(tmp + 1, "%d", &value) == 1 && value > 0) {
+            if (sscanf(tmp, "r %d", &value) == 1 && value > 0) {
                 msg->type = CMD_REMOVE_WORKER;
                 msg->value = value;
                 return 0;

@@ -14,6 +14,12 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
+    if (strlen(argv[3]) != 1){
+        char error[] = "Please pass a single character to search for!\n";
+        write_message(2, error);
+        exit(1);
+    }
+
     int fdr, fdw;
     char c2c = 'a';
     int cnt = 0;
