@@ -1,0 +1,26 @@
+# build artifacts
+*.o
+count_chars
+worker
+dispatcher
+frontend
+
+# Test files
+hello
+output
+big_test.txt
+
+# Test Directories
+Ex1s/
+Ilias1/
+Lab0/
+Lab1/
+Lab2/
+Lab3/
+Testing/
+
+# clangd / tooling
+compile_flags.txt
+compile_commands.json
+.cache/
+.DS_Store
