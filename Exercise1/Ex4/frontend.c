@@ -12,11 +12,15 @@
 #include <errno.h>
 
 #define BUF 256
+#define DISPATCHER_BUF 4096
 
 int shutting_down = 0;
 
 int main(int argc, char *argv[])
 {
+    char dispatcher_buf[DISPATCHER_BUF];
+    size_t dispatcher_buf_len = 0;
+
     if (argc != 3) {
         char error[] = "Arguments format: ./frontend input_file target\n";
         write_message(2, error);
@@ -158,19 +162,61 @@ int main(int argc, char *argv[])
         }
 
         if (FD_ISSET(pipe_dis_fd[0], &fds)) {
-            int n = read_until(pipe_dis_fd[0], buf, BUF, '\n');
+            ssize_t n;
+            size_t start;
+            size_t i;
 
+            n = read(pipe_dis_fd[0],
+                     dispatcher_buf + dispatcher_buf_len,
+                     sizeof(dispatcher_buf) - dispatcher_buf_len);
             if (n < 0) {
                 write_message(2, "Error reading from dispatcher pipe\n");
                 break;
             }
             else if (n == 0) {
+                if (dispatcher_buf_len > 0) {
+                    if (write_all(STDOUT_FILENO, dispatcher_buf, dispatcher_buf_len) !=
+                        (ssize_t)dispatcher_buf_len) {
+                        write_message(2, "Error writing response to stdout\n");
+                    }
+                }
                 break;
             }
 
-            if (write_all(STDOUT_FILENO, buf, (size_t)n) != n) {
-                write_message(2, "Error writing response to stdout\n");
+            dispatcher_buf_len += (size_t)n;
+            start = 0;
+
+            for (i = 0; i < dispatcher_buf_len; i++) {
+                if (dispatcher_buf[i] == '\n') {
+                    size_t line_len = i - start + 1;
+
+                    if (write_all(STDOUT_FILENO, dispatcher_buf + start, line_len) !=
+                        (ssize_t)line_len) {
+                        write_message(2, "Error writing response to stdout\n");
+                        break;
+                    }
+                    start = i + 1;
+                }
+            }
+
+            if (i < dispatcher_buf_len) {
                 break;
+            }
+
+            if (start > 0) {
+                memmove(dispatcher_buf,
+                        dispatcher_buf + start,
+                        dispatcher_buf_len - start);
+                dispatcher_buf_len -= start;
+            }
+
+            if (dispatcher_buf_len == sizeof(dispatcher_buf)) {
+                if (write_all(STDOUT_FILENO, dispatcher_buf, dispatcher_buf_len) !=
+                    (ssize_t)dispatcher_buf_len) {
+                    write_message(2, "Error writing response to stdout\n");
+                    break;
+                }
+                dispatcher_buf_len = 0;
             }
         }
     }
