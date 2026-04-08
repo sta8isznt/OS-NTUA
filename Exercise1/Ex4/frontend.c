@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 
         if (FD_ISSET(pipe_dis_fd[0], &fds)) {
             ssize_t n;
-            size_t start;
+            size_t start;   // Current line start index in dispatcher_buf
             size_t i;
 
             n = read(pipe_dis_fd[0],
@@ -174,8 +174,9 @@ int main(int argc, char *argv[])
                 break;
             }
             else if (n == 0) {
+                // Dispatcher closed the pipe, print any remaining buffer and exit
                 if (dispatcher_buf_len > 0) {
-                    if (write_all(STDOUT_FILENO, dispatcher_buf, dispatcher_buf_len) !=
+                    if (write_all(1, dispatcher_buf, dispatcher_buf_len) !=
                         (ssize_t)dispatcher_buf_len) {
                         write_message(2, "Error writing response to stdout\n");
                     }
@@ -183,6 +184,7 @@ int main(int argc, char *argv[])
                 break;
             }
 
+            // After successfully reading from dispatcher, try to write as much as possible to stdout
             dispatcher_buf_len += (size_t)n;
             start = 0;
 
@@ -190,7 +192,8 @@ int main(int argc, char *argv[])
                 if (dispatcher_buf[i] == '\n') {
                     size_t line_len = i - start + 1;
 
-                    if (write_all(STDOUT_FILENO, dispatcher_buf + start, line_len) !=
+                    // Write only full lines to stdout, if the write fails break the loop and exit
+                    if (write_all(1, dispatcher_buf + start, line_len) !=
                         (ssize_t)line_len) {
                         write_message(2, "Error writing response to stdout\n");
                         break;
@@ -199,10 +202,12 @@ int main(int argc, char *argv[])
                 }
             }
 
+            // If error occured in writing to stdout break the loop and exit
             if (i < dispatcher_buf_len) {
                 break;
             }
 
+            // Move any remaining partial line to the beginning of the buffer and update the buffer length
             if (start > 0) {
                 memmove(dispatcher_buf,
                         dispatcher_buf + start,
@@ -210,8 +215,9 @@ int main(int argc, char *argv[])
                 dispatcher_buf_len -= start;
             }
 
+            // If the buffer is full but no newline was found, write the whole buffer to stdout and reset it
             if (dispatcher_buf_len == sizeof(dispatcher_buf)) {
-                if (write_all(STDOUT_FILENO, dispatcher_buf, dispatcher_buf_len) !=
+                if (write_all(1, dispatcher_buf, dispatcher_buf_len) !=
                     (ssize_t)dispatcher_buf_len) {
                     write_message(2, "Error writing response to stdout\n");
                     break;
