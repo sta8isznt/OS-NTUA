@@ -127,9 +127,6 @@ void *thread_start_fn(void* arg){
 
     for (line = thr->thrid; line < y_chars; line += thr->thrcnt){
         compute_mandel_line(line, &image[line * x_chars]);
-    }
-
-    for (line = thr->thrid; line < y_chars; line += thr->thrcnt){
         if (sem_wait(&sems[line]) != 0) {
             perror("sem_wait");
             exit(1);
