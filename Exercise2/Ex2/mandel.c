@@ -125,8 +125,6 @@ void *thread_start_fn(void* arg){
     struct thread_info_struct *thr = arg;
     int line;
 
-    fprintf(stderr, "Thread %d of %d. START.\n", thr->thrid, thr->thrcnt);
-
     for (line = thr->thrid; line < y_chars; line += thr->thrcnt){
         compute_mandel_line(line, &image[line * x_chars]);
     }
@@ -145,7 +143,6 @@ void *thread_start_fn(void* arg){
         }
     }
 
-    fprintf(stderr, "Thread %d of %d. END.\n", thr->thrid, thr->thrcnt);
     return NULL;
 }
 
