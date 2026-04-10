@@ -144,6 +144,8 @@ void *thread_start_fn(void* arg){
             }
         }
     }
+
+    fprintf(stderr, "Thread %d of %d. END.\n", thr->thrid, thr->thrcnt);
     return NULL;
 }
 
