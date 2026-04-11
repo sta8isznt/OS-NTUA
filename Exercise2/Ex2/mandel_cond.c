@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "mandel-lib.h"
 
@@ -12,6 +13,14 @@
 
 #define perror_pthread(ret, msg) \
     do { errno = ret; perror(msg); } while (0)
+
+// Signal Handler
+void sigint_handler(int s)
+{
+    (void)s;
+    write(1, "\033[0m", 4);
+    _exit(1);
+}
 
 int y_chars = 50;
 int x_chars = 90;
@@ -168,6 +177,18 @@ int main(int argc, char * argv[]){
     struct thread_info_struct *thr;
     xstep = (xmax - xmin) / x_chars;
     ystep = (ymax - ymin) / y_chars;
+
+
+    // Signal handling initialization
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigint_handler;
+    sa.sa_flags=SA_RESTART;
+    sigemptyset(&sa.sa_mask);
+    if(sigaction(SIGINT, &sa, NULL) < 0){
+        perror("sigaction");
+        exit(1);
+    }
 
     // Parse the arguments safely
     if (argc != 2){
