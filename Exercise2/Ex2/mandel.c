@@ -1,43 +1,43 @@
+/*
+ * mandel.c
+ *
+ * A program to draw the Mandelbrot Set on a 256-color xterm.
+ *
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <errno.h>
 
 #include "mandel-lib.h"
 
 #define MANDEL_MAX_ITERATION 100000
 
-#define perror_pthread(ret, msg) \
-    do { errno = ret; perror(msg); } while (0)
+/***************************
+ * Compile-time parameters *
+ ***************************/
 
+/*
+ * Output at the terminal is is x_chars wide by y_chars long
+*/
 int y_chars = 50;
 int x_chars = 90;
 
-// Define a global variable that will hold all the lines stored sequencially
-int *image;
-
-// Define the array of semaphores
-sem_t *sems;
-
-// Define the boundaries of the complex plane to be drawn
+/*
+ * The part of the complex plane to be drawn:
+ * upper left corner is (xmin, ymax), lower right corner is (xmax, ymin)
+*/
 double xmin = -1.8, xmax = 1.0;
 double ymin = -1.0, ymax = 1.0;
 
-// Define the step of x and y for each point to be drawn
+/*
+ * Every character in the final output is
+ * xstep x ystep units wide on the complex plane.
+ */
 double xstep;
 double ystep;
-
-// Define the thread info structure
-struct thread_info_struct {
-    pthread_t tid; /* POSIX thread id, as returned by the library */
-
-    int thrid; /* Application-defined thread id */
-    int thrcnt;
-};
 
 /*
  * This function computes a line of output
@@ -45,7 +45,9 @@ struct thread_info_struct {
  */
 void compute_mandel_line(int line, int color_val[])
 {
-    // Compute the y value corresponding to this line
+    /*
+     * x and y traverse the complex plane.
+     */
     double x, y;
 
     int n;
@@ -95,127 +97,31 @@ void output_mandel_line(int fd, int color_val[])
     }
 }
 
-int safe_atoi(char *s, int *val)
+void compute_and_output_mandel_line(int fd, int line)
 {
-    long l;
-    char *endp;
+    /*
+     * A temporary array, used to hold color values for the line being drawn
+     */
+    int color_val[x_chars];
 
-    l = strtol(s, &endp, 10);
-    if (s != endp && *endp == '\0') {
-        *val = l;
-        return 0;
-    } else
-        return -1;
+    compute_mandel_line(line, color_val);
+    output_mandel_line(fd, color_val);
 }
 
-void *safe_malloc(size_t size)
+int main(void)
 {
-    void *p;
-
-    if ((p = malloc(size)) == NULL) {
-        fprintf(stderr, "Out of memory, failed to allocate %zd bytes\n",
-                size);
-        exit(1);
-    }
-
-    return p;
-}
-
-void *thread_start_fn(void* arg){
-    struct thread_info_struct *thr = arg;
     int line;
 
-    for (line = thr->thrid; line < y_chars; line += thr->thrcnt){
-        compute_mandel_line(line, &image[line * x_chars]);
-        if (sem_wait(&sems[line]) != 0) {
-            perror("sem_wait");
-            exit(1);
-        }
-        output_mandel_line(1, &image[line * x_chars]);
-        if(line + 1< y_chars){
-            if (sem_post(&sems[line+1]) != 0) {
-                perror("sem_post");
-                exit(1);
-            }
-        }
-    }
-
-    return NULL;
-}
-
-int main(int argc, char * argv[]){
-    int NTHREADS;
-    struct thread_info_struct *thr;
     xstep = (xmax - xmin) / x_chars;
     ystep = (ymax - ymin) / y_chars;
 
-    // Parse the arguments safely
-    if (argc != 2){
-        fprintf(stderr, "Usage: %s thread_count\n", argv[0]);
-        exit(1);
+    /*
+     * draw the Mandelbrot Set, one line at a time.
+     * Output is sent to file descriptor '1', i.e., standard output.
+     */
+    for (line = 0; line < y_chars; line++) {
+        compute_and_output_mandel_line(1, line);
     }
-
-    if ((safe_atoi(argv[1], &NTHREADS) < 0) || NTHREADS <= 0){
-        fprintf(stderr, "Please pass a correct number of threads\n");
-        exit(1);
-    }
-
-    // Allocate and initialize the thread info structures
-    thr = safe_malloc(NTHREADS * sizeof(*thr));
-    memset(thr, 0, NTHREADS * sizeof(*thr));
-
-    // Allocate and initialize the image
-    image = safe_malloc(y_chars*x_chars *sizeof(*image));
-    memset(image, 0, y_chars*x_chars *sizeof(*image));
-
-    // Allocate and initialize the array of semaphores
-    sems = safe_malloc(y_chars * sizeof(*sems));
-    for (int i = 0; i < y_chars; i++) {
-        if (i == 0){
-            if (sem_init(&sems[i], 0, 1) != 0) {
-                perror("sem_init");
-                exit(1);
-            }
-        } else {
-            if (sem_init(&sems[i], 0, 0) != 0) {
-                perror("sem_init");
-                exit(1);
-            }
-        }
-    }
-
-    // Spawn the threads
-    for (int i=0; i < NTHREADS; i++){
-        thr[i].thrid = i;
-        thr[i].thrcnt = NTHREADS;
-
-        int ret = pthread_create(&thr[i].tid, NULL, thread_start_fn, &thr[i]);
-        if (ret){
-            perror_pthread(ret, "pthread_create");
-            exit(1);
-        }
-    }
-
-    // Wait for all threads to terminate
-    for( int i=0; i < NTHREADS; i++){
-        int ret = pthread_join(thr[i].tid, NULL);
-        if (ret != 0) {
-        perror_pthread(ret, "pthread_join");
-        exit(1);
-        }
-    }
-
-    // Destroy the semaphores and free the allocated memory
-    for( int i=0; i < y_chars; i++){
-        if (sem_destroy(&sems[i]) != 0) {
-            perror("sem_destroy");
-            exit(1);
-        }
-    }
-    free(sems);
-    free(image);
-    free(thr);
-    
 
     reset_xterm_color(1);
     return 0;
