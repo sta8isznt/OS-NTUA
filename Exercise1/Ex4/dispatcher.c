@@ -161,7 +161,10 @@ static int next_free_worker(worker_t w[]){
     size_t k;
     for(k=0;k<MAX_WORKERS;k++){
         size_t i=(rr_next+k)%MAX_WORKERS;
-        if(w[i].alive && !w[i].busy){ rr_next=(i+1)%MAX_WORKERS; return (int)i; }
+        if(w[i].alive && !w[i].busy){
+            rr_next=(i+1)%MAX_WORKERS;
+            return (int)i;
+        }
     }
     return -1;
 }

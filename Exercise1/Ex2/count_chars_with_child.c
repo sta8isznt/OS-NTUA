@@ -98,7 +98,11 @@ int main(int argc, char *argv[]){
     }
     else {
         close(pipefd[1]);
+
+        /* wait for the child process to finish */
         wait(&status);
+
+        /* check if the child process exited successfully */
         if (!WIFEXITED(status) || WEXITSTATUS(status) != 0){
            char error[] = "Child failed\n";
            write_message(2, error);

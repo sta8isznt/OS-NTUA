@@ -29,7 +29,7 @@ int main(int argx, char *argv[]){
         sprintf(message, "My child's PID is %ld\n", (long)p);
         write_message(1, message);
         wait(&status);
-        sprintf(message, "My child did it's job. It's exit status is %ld.\n", sizeof(WEXITSTATUS(status)));
+        sprintf(message, "My child did it's job. It's exit status is %ld.\n", WEXITSTATUS(status));
         write_message(1, message);
         sprintf(message, "The parent's variable is %d\n", x);
         write_message(1, message);

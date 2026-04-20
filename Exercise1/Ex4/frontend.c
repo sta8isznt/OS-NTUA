@@ -33,17 +33,17 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    int pipe_fd_dis[2];
-    int pipe_dis_fd[2];
+    int pipe_command[2];
+    int pipe_answer[2];
 
-    if (pipe(pipe_fd_dis) < 0) {
-        char error[] = "Error creating pipe_fd_dis\n";
+    if (pipe(pipe_command) < 0) {
+        char error[] = "Error creating pipe_command\n";
         write_message(2, error);
         exit(1);
     }
 
-    if (pipe(pipe_dis_fd) < 0) {
-        char error[] = "Error creating pipe_dis_fd\n";
+    if (pipe(pipe_answer) < 0) {
+        char error[] = "Error creating pipe_answer\n";
         write_message(2, error);
         exit(1);
     }
@@ -56,15 +56,16 @@ int main(int argc, char *argv[])
     }
 
     if (p == 0) {
-        close(pipe_fd_dis[1]);
-        close(pipe_dis_fd[0]);
+        /* Close write end for pipe_command and read end for pipe_answer */
+        close(pipe_command[1]);
+        close(pipe_answer[0]);
 
-        // Store in buffers the fds of pipes in order to pass them in dispatcher
+        // Convert the file descriptors to strings to pass as arguments to dispatcher
         char fd_dis[16];
         char dis_fd[16];
 
-        snprintf(fd_dis, sizeof(fd_dis), "%d", pipe_fd_dis[0]);
-        snprintf(dis_fd, sizeof(dis_fd), "%d", pipe_dis_fd[1]);
+        snprintf(fd_dis, sizeof(fd_dis), "%d", pipe_command[0]);
+        snprintf(dis_fd, sizeof(dis_fd), "%d", pipe_answer[1]);
 
         char *newargv[] = {
             "./dispatcher",
@@ -85,8 +86,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    close(pipe_fd_dis[0]);
-    close(pipe_dis_fd[1]);
+    close(pipe_command[0]);
+    close(pipe_answer[1]);
 
     {
         char *welcome_message =
@@ -108,9 +109,9 @@ int main(int argc, char *argv[])
 
         FD_ZERO(&fds);
         if (!shutting_down) FD_SET(0, &fds);
-        FD_SET(pipe_dis_fd[0], &fds);
+        FD_SET(pipe_answer[0], &fds);
 
-        nfds = pipe_dis_fd[0] + 1;
+        nfds = pipe_answer[0] + 1;
 
         rc = select(nfds, &fds, NULL, NULL, NULL);
         if (rc < 0) {
@@ -148,7 +149,7 @@ int main(int argc, char *argv[])
                 }
             }
             else {
-                if (write_all(pipe_fd_dis[1], &msg, sizeof(msg)) != (ssize_t)sizeof(msg)) {
+                if (write_all(pipe_command[1], &msg, sizeof(msg)) != (ssize_t)sizeof(msg)) {
                     write_message(2, "Error writing command to dispatcher\n");
                     break;
                 }
@@ -156,17 +157,17 @@ int main(int argc, char *argv[])
                 // When the dispatcher closes his side of pipe EOF will occur and the loop will break
                 if (msg.type == CMD_SHUTDOWN) {
                     shutting_down = 1;
-                    close(pipe_fd_dis[1]);
+                    close(pipe_command[1]);
                 }
             }
         }
 
-        if (FD_ISSET(pipe_dis_fd[0], &fds)) {
+        if (FD_ISSET(pipe_answer[0], &fds)) {
             ssize_t n;
             size_t start;   // Current line start index in dispatcher_buf
             size_t i;
 
-            n = read(pipe_dis_fd[0],
+            n = read(pipe_answer[0],
                      dispatcher_buf + dispatcher_buf_len,
                      sizeof(dispatcher_buf) - dispatcher_buf_len);
             if (n < 0) {
@@ -227,8 +228,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if(!shutting_down) close(pipe_fd_dis[1]);
-    close(pipe_dis_fd[0]);
+    if(!shutting_down) close(pipe_command[1]);
+    close(pipe_answer[0]);
 
     // We dont care here about status termination info
     waitpid(p, NULL, 0);

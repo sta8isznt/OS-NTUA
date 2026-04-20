@@ -113,7 +113,7 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    /* Prepare a sigset containing only SIGCHLD */
+    /* Prepare sigset containing only SIGCHLD */
     sigemptyset(&block_chld);
     sigaddset(&block_chld, SIGCHLD);
 
@@ -204,6 +204,7 @@ int main(int argc, char *argv[]){
 
             while (remaining > 0)
             {
+                /* chunk = minimum of remaining and BUFF_SIZE */
                 ssize_t chunk = (remaining > BUFF_SIZE) ? BUFF_SIZE : remaining;
                 ssize_t n = read(fd, buffer, chunk);
                 if (n < 0)
@@ -298,7 +299,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    /* Open output file*/
+    /* Open output file */
     int fdw = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fdw < 0)
     {

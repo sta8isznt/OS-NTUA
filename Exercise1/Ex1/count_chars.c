@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
     /* character to search for */
     c2c = argv[3][0];
 
-    /* count the occurrences of the given character */
+    /* count the occurrences of the given character until end of file */
     while ((n = read(fdr, buff, BUFF_SIZE)) != 0){
         if (n == -1){
             char error[] = "Problem reading from file";
