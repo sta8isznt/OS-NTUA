@@ -8,7 +8,6 @@ frontend
 # Test files
 hello
 output
-big_test.txt
 
 # Test Directories
 Ex1s/
