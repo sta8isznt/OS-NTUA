@@ -253,6 +253,7 @@ int main(void)
 
 	/* Print the map. */
 	show_maps();
+	show_va_info((uint64_t) heap_private_buf);
 
 
 	/*
@@ -278,7 +279,9 @@ int main(void)
 	 * TODO: Write your code here to complete Step 4.
 	 */
 	
-
+	memset(heap_private_buf, 0, buffer_size);
+	pa = get_physical_address((uint64_t)heap_private_buf);
+	printf("VA: %p -> PA: 0x%llx\n", heap_private_buf, pa);
 
 	/*
 	 * Step 5: Use mmap(2) to map file.txt (memory-mapped files) and print
