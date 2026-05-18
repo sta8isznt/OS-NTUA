@@ -294,6 +294,37 @@ int main(void)
 	 * TODO: Write your code here to complete Step 5.
 	 */
 
+	fd = open("file.txt", O_RDONLY);
+	if (fd < 0)
+		die("open");
+
+	struct stat st; /* To get the file size. */
+	if (fstat(fd, &st) < 0)
+		die("fstat");
+
+	file_shared_buf = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+
+	if (file_shared_buf == MAP_FAILED)
+		die("mmap");
+	/* Print the content of the file. */
+	ssize_t written;
+	size_t total = 0;
+
+	while (total < st.st_size) {
+		written = write(1,
+						file_shared_buf + total,
+						st.st_size - total);/* Write the file content to standard output. */
+		if (written == -1)
+			die("write");
+
+		total += written;
+	}
+
+	printf("\n");
+	
+	show_maps();
+	show_va_info((uint64_t) file_shared_buf);
+
 
 	/*
 	 * Step 6: Use mmap(2) to allocate a shared buffer of 1 page. Use
