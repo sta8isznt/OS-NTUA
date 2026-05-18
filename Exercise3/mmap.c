@@ -337,6 +337,13 @@ int main(void)
 	/*
 	 * TODO: Write your code here to complete Step 6.
 	 */
+	heap_shared_buf = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+	if (heap_shared_buf == MAP_FAILED)
+		die("mmap");
+
+	show_maps();
+	show_va_info((uint64_t) heap_shared_buf);
 
 
 	p = fork();
