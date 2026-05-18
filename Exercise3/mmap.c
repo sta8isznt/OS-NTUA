@@ -245,6 +245,15 @@ int main(void)
 	 * TODO: Write your code here to complete Step 2.
 	 */
 
+	heap_private_buf = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+	/* Check if mmap succeeded. */
+	if (heap_private_buf == MAP_FAILED)
+		die("mmap");
+
+	/* Print the map. */
+	show_maps();
+
 
 	/*
 	 * Step 3: Find the physical address of the first page of your buffer
