@@ -265,7 +265,8 @@ int main(void)
 	/*
 	 * TODO: Write your code here to complete Step 3.
 	 */
-
+    pa = get_physical_address((uint64_t)heap_private_buf);
+	printf("VA: %p -> PA: 0x%llx\n", heap_private_buf, pa);
 
 	/*
 	 * Step 4: Write zeros to the buffer and repeat Step 3.
@@ -276,6 +277,7 @@ int main(void)
 	/*
 	 * TODO: Write your code here to complete Step 4.
 	 */
+	
 
 
 	/*
